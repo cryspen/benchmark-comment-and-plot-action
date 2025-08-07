@@ -1,0 +1,134 @@
+name: 'Continuous Benchmark - Post Results as Comment'
+author: 'Cryspen <https://github.com/cryspen>'
+description: 'Continuous Benchmark that post results as a PR comment'
+branding:
+  icon: 'fast-forward'
+  color: 'blue'
+
+inputs:
+  bigger-is-better:
+    description: 'Whether a larger value is better for comparison purposes'
+    required: true
+    default: false
+  group-by:
+    description: 'Groups for plots. This value must be a comma-separated list of strings'
+    required: true
+    default: 'os'
+  schema:
+    description: 'Metadata schema for plots. This value must be a comma-separated list of strings'
+    required: true
+    default: 'name,platform,os,keySize,api,category'
+  name:
+    description: 'Name of the benchmark. This value must be identical among all benchmarks'
+    required: true
+    default: 'Benchmark'
+  input-data-path:
+    description: 'A path to file which contains the benchmark output'
+    required: true
+  gh-pages-branch:
+    description: 'Branch for gh-pages'
+    required: true
+    default: 'gh-pages'
+  gh-repository:
+    description: 'Url to an optional different repository to store benchmark results'
+    required: false
+  base-path:
+    description: 'Path to directory which contains benchmark files on GitHub pages branch'
+    required: true
+    default: ''
+  github-token:
+    description: 'GitHub API token to pull/push GitHub pages branch and deploy GitHub pages. For public repository, this must be personal access token for now. Please read README.md for more details'
+    required: false
+  ref:
+    description: 'optional Ref to use when finding commit'
+    required: false
+  auto-push:
+    description: 'Push GitHub Pages branch to remote automatically. This option requires github-token input'
+    required: false
+    default: false
+  skip-fetch-gh-pages:
+    description: 'Skip pulling GitHub Pages branch before generating an auto commit'
+    required: false
+    default: false
+  comment-always:
+    description: 'Leave a comment with benchmark result comparison. To enable this feature, github-token input must be given as well'
+    required: false
+    default: false
+  summary-always:
+    description: 'Leave a job summary with benchmark result comparison'
+    required: false
+    default: false
+  save-data-file:
+    description: 'Save the benchmark data to external file'
+    required: false
+    default: true
+  comment-on-alert:
+    description: 'Leave an alert comment when current benchmark result is worse than previous. Threshold is specified with alert-threshold input. To enable this feature, github-token input must be given as well'
+    required: false
+    default: false
+  alert-threshold:
+    description: 'Threshold which determines if an alert should happen or not. Percentage value such as "150%". For example, 150% means that an alert happens when current benchmark result is 1.5x worse than previous'
+    required: false
+    default: '200%'
+  fail-on-alert:
+    description: 'Workflow fails when alert comment happens'
+    required: false
+    # Note: Set to false by default since this action does not push to remote by default. When workflow
+    # fails and auto-push is not set, there is no chance to push the result to remote.
+    default: false
+  fail-threshold:
+    description: 'Threshold which determines if the current workflow fails. Format is the same as alert-threshold input. If this value is not specified, the same value as alert-threshold is used'
+    required: false
+  alert-comment-cc-users:
+    description: 'Comma separated GitHub user names which start with @ (e.g. "@foo,@bar"). They will be mentioned in commit comment for alert.'
+    required: false
+  external-data-json-path:
+    description: 'JSON data file for storing benchmark results. When this input is set, github-action-benchmark no longer uses Git branch to store data. Instead, it reads and appends benchmark data from/to the file. User must store the file anywhere'
+    required: false
+  max-items-in-chart:
+    description: 'Max data points in a benchmark chart to avoid making the chart too busy. Value must be unsigned integer. No limit by default'
+    required: false
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Prepare PR Metadata
+      run: |
+        cat >metadata.json <<EOF
+          {
+            "repo": "${{ github.repository }}",
+            "repo_owner": "${{ github.repository_owner }}",
+            "prNumber": ${{ github.event.pull_request.number }},
+            "prTitle": "${{ github.event.pull_request.title }}",
+            "commitHash": "$(git rev-parse HEAD)",
+            "commitHashShort": "$(git rev-parse --short HEAD)",
+            "commitMessage": "$(git show -s --format=%B HEAD)",
+            "commitMessageFirst": "$(git show -s --format=%B HEAD | head -n1)"
+          }
+        EOF
+    - name: Fetch Benchmark Benchmark Data
+      run: |
+        url="https://github.com/${{ gh-repository }}/tree/${{ gh-pages-branch }}/${{ base-path }}/main.json"
+        echo fetching baseline data from "$url"
+        wget "$url"
+    - name: Create Benchmark HTML and Data Files
+      run: |
+        echo TODO: build the html >index.html
+        echo TODO: run the script >data.json
+    - name: Upload Artifacts
+      id: upload
+      uses: actions/upload-artifact@v4
+      with:
+        path: |
+          metadata.json
+          index.html
+          data.json
+
+    - name: Build Comment
+      run: |
+        echo TODO: run a different script that uses ${{ steps.upload.outputs.artifact-url }} >comment.md
+    - name: Post Comment
+      uses: mshick/add-pr-comment@v2
+        with:
+          message-path: comment.md
+
