@@ -92,8 +92,12 @@ inputs:
 runs:
   using: 'composite'
   steps:
+    - uses: denoland/setup-deno@v2
+      with:
+        deno-version: v2.x
     - name: Prepare PR Metadata
-      run: |
+      run: | 
+        # TODO: gracefully handle missing data
         cat >metadata.json <<EOF
           {
             "committer": "${{ github.event.pull_request.head.user.login }}",
@@ -111,18 +115,24 @@ runs:
           }
         EOF
     - name: Fetch Benchmark Benchmark Data
+      id: load-baseline
       run: |
-        url="https://github.com/${{ gh-repository }}/tree/${{ gh-pages-branch }}/${{ base-path }}/main.json"
+        url="https://github.com/${{ gh-repository }}/raw/${{ gh-pages-branch }}/${{ base-path }}/refs/heads/main.json"
         echo fetching baseline data from "$url"
-        wget "$url"
+        echo success >$GITHUB_OUTPUT
+        wget -O baseline.json "$url" || echo failure >$GITHUB_OUTPUT
+
+    # TODO: Only run this if fetching the data was successful, i.e. if there exists data for main.
+    #       Otherwise just post the comment without diff and visualization.
     - name: Create Benchmark HTML and Data Files
+      if: ${{ steps.load-baseline == 'success' }}
       run: |
         cp $GITHUB_ACTION_PATH/src/default_index.html index.html
 
-        apt install -y deno
         deno ./src/updateBenchmarkData.ts ${{ name }} ${{ schema }} ${{ group-by }} ${{ bigger-is-better }} metadata.js main.json ${{ input-data-path }}
     - name: Upload Artifacts
       id: upload
+      if: ${{ steps.load-baseline == 'success' }}
       uses: actions/upload-artifact@v4
       with:
         path: |
@@ -130,9 +140,16 @@ runs:
           index.html
           data.json
 
-    - name: Build Comment
+    # Depending on whether there was baseline data, generate the comment with out without comparison an viz
+    - name: Build Comment with Diff
+      if: ${{ steps.load-baseline == 'success' }}
       run: |
         echo TODO: run a different script that uses ${{ steps.upload.outputs.artifact-url }} >comment.md
+    - name: Build Comment without Diff
+      if: ${{ steps.load-baseline == 'failure' }}
+      run: |
+        deno ./src/report_gen_nodiff.ts ${{ schema }} ${{ group-by }} <${{ steps.upload.outputs.artifact-url }} >comment.md
+
     - name: Post Comment
       uses: mshick/add-pr-comment@v2
         with:

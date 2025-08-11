@@ -2,6 +2,11 @@
 
 import { promises as fs } from "node:fs";
 
+function abort(msg: string, code = 1) {
+  console.error(msg);
+  Deno.exit(code);
+}
+
 interface GitHubUser {
   email?: string;
   name?: string;
@@ -43,11 +48,6 @@ interface Benchmark {
   date: number;
   bigger_is_better: boolean;
   benches: BenchmarkResult[];
-}
-
-function abort(msg: string, code = 1) {
-  console.error(msg);
-  Deno.exit(code);
 }
 
 function parseSchema(schema?: string): string[] {
@@ -231,7 +231,6 @@ const encoder = new TextEncoder();
 const jsonBytes = encoder.encode(JSON.stringify(data));
 
 let n = 0;
-
 while (n < jsonBytes.length) {
   n += await Deno.stdout.write(jsonBytes.slice(n));
 }
