@@ -71,6 +71,20 @@ function parseSchema(schema?: string): string[] {
   return keys;
 }
 
+function parseGroupBy(groupBy?: string): string[] {
+  if (groupBy === undefined) {
+    return ["os"];
+  }
+
+  const keys = groupBy.split(",");
+
+  if (keys.length === 1 && keys[0] === "") {
+    return ["os"];
+  }
+
+  return keys;
+}
+
 async function parseJsonFile<T>(filePath: string): Promise<T> {
   const bytes = await fs.readFile(filePath, "utf8");
   return JSON.parse(bytes);
@@ -193,7 +207,7 @@ if (bigger_is_better_raw == "true") {
 }
 
 const schema = parseSchema(schema_raw);
-const groupBy = parseSchema(groupBy_raw);
+const groupBy = parseGroupBy(groupBy_raw);
 const metadata: Metadata = await parseJsonFile(metadata_path);
 const commit: Commit = {
   author: { name: metadata.committer, username: metadata.committer },
