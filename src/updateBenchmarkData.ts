@@ -1,16 +1,22 @@
 #!/usr/bin/env -S deno run -R
 
-import { promises as fs } from 'node:fs';
+import { promises as fs } from "node:fs";
+
+interface GitHubUser {
+  email?: string;
+  name?: string;
+  username?: string;
+}
 
 interface Commit {
-    author: GitHubUser;
-    committer: GitHubUser;
-    distinct?: unknown; // Unused
-    id: string;
-    message: string;
-    timestamp?: string;
-    tree_id?: unknown; // Unused
-    url: string;
+  author: string;
+  committer: GitHubUser;
+  distinct?: unknown; // Unused
+  id: string;
+  message: string;
+  timestamp?: string;
+  tree_id?: unknown; // Unused
+  url: string;
 }
 
 interface BenchmarkResult {
@@ -59,19 +65,26 @@ const DEFAULT_LISTING = {
   prs: [],
 };
 
-function abort(msg: string, code=1){
+function abort(msg: string, code = 1) {
   console.error(msg);
   Deno.exit(code);
 }
 
 function parseSchema(schema?: string): string[] {
-  const defaultSchema = ['name', 'platform', 'os', 'keySize', 'api', 'category'];
+  const defaultSchema = [
+    "name",
+    "platform",
+    "os",
+    "keySize",
+    "api",
+    "category",
+  ];
   if (schema === undefined) {
     return defaultSchema;
   }
 
-  const keys = schema.split(',');
-  if (keys.length === 1 && keys[0] === '') {
+  const keys = schema.split(",");
+  if (keys.length === 1 && keys[0] === "") {
     return defaultSchema;
   }
 
@@ -79,45 +92,53 @@ function parseSchema(schema?: string): string[] {
 }
 
 function parseGroupBy(groupBy?: string): string[] {
-    if (groupBy === undefined) {
-        return ['os'];
-    }
+  if (groupBy === undefined) {
+    return ["os"];
+  }
 
-    const keys = groupBy.split(',');
+  const keys = groupBy.split(",");
 
-    if (keys.length === 1 && keys[0] === '') {
-        return ['os'];
-    }
+  if (keys.length === 1 && keys[0] === "") {
+    return ["os"];
+  }
 
-    return keys;
+  return keys;
 }
 
-async function parseJsonFile(filePath: string) : Object {
-  const bytes = await fs.readFile(filePath, 'utf8');
-  return JSON.parse(benchdata_bytes) ;
+async function parseJsonFile<T>(filePath: string): Promise<T> {
+  const bytes = await fs.readFile(filePath, "utf8");
+  return JSON.parse(bytes);
 }
 
-async function loadBenchmarkResult(filePath: string, schema: string[]): BenchmarkResult[]{
-  const benchdata = parseJsonFile(filePath);
+async function loadBenchmarkResult(
+  filePath: string,
+  schema: string[],
+): Promise<BenchmarkResult[]> {
+  const benchdata: BenchmarkResult[] = await parseJsonFile(filePath);
 
   benchdata.forEach((result: BenchmarkResult) => {
-      schema.forEach((key) => {
-          if (!Object.keys(result).includes(key)) {
-              result[key] = undefined;
-          }
-          if (!result['range']) {
-              result['range'] = undefined;
-          }
-          if (!result['extra']) {
-              result['extra'] = undefined;
-          }
-      });
+    schema.forEach((key) => {
+      if (!Object.keys(result).includes(key)) {
+        result[key] = undefined;
+      }
+      if (!result["range"]) {
+        result["range"] = undefined;
+      }
+      if (!result["extra"]) {
+        result["extra"] = undefined;
+      }
+    });
   });
 
-  return benchdata
+  return benchdata;
+}
+
+interface Metadata {
+  repoUrl: string;
 }
 
 function addBenchmarkToDataJson(
+  metadata: Metadata,
   groupBy: string[],
   schema: string[],
   benchName: string,
@@ -125,8 +146,7 @@ function addBenchmarkToDataJson(
   data: DataJson,
   maxItems: number | null,
 ): Benchmark | null {
-  const repoMetadata = getCurrentRepoMetadata();
-  const htmlUrl = repoMetadata.html_url ?? "";
+  const repoMetadata = metadata;
 
   let prevBench: Benchmark | null = null;
   data.lastUpdate = Date.now();
@@ -137,7 +157,6 @@ function addBenchmarkToDataJson(
     data.schema = {};
   }
   data.groupBy[benchName] = groupBy;
-  data.repoUrl = htmlUrl;
   data.schema[benchName] = schema;
 
   // Add benchmark result
@@ -168,27 +187,33 @@ function addBenchmarkToDataJson(
 }
 
 if (Deno.args.length != 5) {
-  abort("Usage: script <name> <schema> <group-by> <metadata.json> <baseline-data.json> <new-benchdata.json>");
+  abort(
+    "Usage: script <name> <schema> <group-by> <metadata.json> <baseline-data.json> <new-benchdata.json>",
+  );
 }
 
-const [name, schema, groupBy, metadata_path, baseline_path, benchdata_path] = Deno.args;
+const [
+  name,
+  schema_raw,
+  groupBy_raw,
+  metadata_path,
+  baseline_path,
+  benchdata_path,
+] = Deno.args;
 
-let schema = parseSchema(schema);
-let groupBy = parseSchema(groupBy);
-let bench = loadBenchmarkResult(benchdata_path, schema);
-const data: DataJson  = parseJsonFile(baseline_path);
-const metadata  = parseJsonFile(metadata_path);
+const schema = parseSchema(schema_raw);
+const groupBy = parseSchema(groupBy_raw);
+const bench = await loadBenchmarkResult(benchdata_path, schema);
+const data: DataJson = await parseJsonFile(baseline_path);
+const metadata: Metadata = await parseJsonFile(metadata_path);
 
-addBenchmarkToDataJson(groupBy, schema, name, bench, data);
+addBenchmarkToDataJson(metadata, groupBy, schema, name, bench, data, null);
 
 const encoder = new TextEncoder();
-const jsonBytes =  encoder.encode(JSON.stringify(data));
+const jsonBytes = encoder.encode(JSON.stringify(data));
 
 let n = 0;
 
 while (n < jsonBytes.length) {
   n += await Deno.stdout.write(jsonBytes.slice(n));
 }
-
-
-
