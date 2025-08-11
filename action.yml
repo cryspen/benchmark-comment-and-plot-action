@@ -96,6 +96,8 @@ runs:
       run: |
         cat >metadata.json <<EOF
           {
+            "comitter": "${{ github.event.pull_request.head.user.login }}",
+            "timestamp": ${{ github.event.pull_request.head.repo.updated_at }},
             "repo": "${{ github.repository }}",
             "repo_owner": "${{ github.repository_owner }}",
             "prNumber": ${{ github.event.pull_request.number }},
@@ -103,7 +105,8 @@ runs:
             "commitHash": "$(git rev-parse HEAD)",
             "commitHashShort": "$(git rev-parse --short HEAD)",
             "commitMessage": "$(git show -s --format=%B HEAD)",
-            "commitMessageFirst": "$(git show -s --format=%B HEAD | head -n1)"
+            "commitMessageFirst": "$(git show -s --format=%B HEAD | head -n1)",
+            "commitUrl": "${{ github.event.pull_request.html_url }}"
           }
         EOF
     - name: Fetch Benchmark Benchmark Data
@@ -113,8 +116,10 @@ runs:
         wget "$url"
     - name: Create Benchmark HTML and Data Files
       run: |
-        echo TODO: build the html >index.html
-        echo TODO: run the script >data.json
+        cp $GITHUB_ACTION_PATH/src/default_index.html index.html
+
+        apt install -y deno
+        deno ./src/updateBenchmarkData.ts ${{ name }} ${{ schema }} ${{ group-by }} ${{ bigger-is-better }} metadata.js main.json ${{ input-data-path }}
     - name: Upload Artifacts
       id: upload
       uses: actions/upload-artifact@v4

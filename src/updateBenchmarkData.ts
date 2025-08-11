@@ -111,12 +111,14 @@ async function parseJsonFile<T>(filePath: string): Promise<T> {
 }
 
 async function loadBenchmarkResult(
+  commit: Commit,
+  bigger_is_better: boolean,
   filePath: string,
   schema: string[],
-): Promise<BenchmarkResult[]> {
-  const benchdata: BenchmarkResult[] = await parseJsonFile(filePath);
+): Promise<Benchmark> {
+  const benches: BenchmarkResult[] = await parseJsonFile(filePath);
 
-  benchdata.forEach((result: BenchmarkResult) => {
+  benches.forEach((result: BenchmarkResult) => {
     schema.forEach((key) => {
       if (!Object.keys(result).includes(key)) {
         result[key] = undefined;
@@ -130,11 +132,26 @@ async function loadBenchmarkResult(
     });
   });
 
-  return benchdata;
+  return {
+    benches,
+    commit,
+    bigger_is_better,
+    date: Date.now(),
+  };
 }
 
 interface Metadata {
-  repoUrl: string;
+  committer: string;
+  timestamp: string;
+  repo: string;
+  repo_owner: string;
+  prNumber: number;
+  prTitle: string;
+  commitHash: string;
+  commitHashShort: string;
+  commitMessage: string;
+  commitMesasgeFirst: string;
+  commitUrl: string;
 }
 
 function addBenchmarkToDataJson(
@@ -146,8 +163,6 @@ function addBenchmarkToDataJson(
   data: DataJson,
   maxItems: number | null,
 ): Benchmark | null {
-  const repoMetadata = metadata;
-
   let prevBench: Benchmark | null = null;
   data.lastUpdate = Date.now();
   if (!data.groupBy) {
@@ -186,9 +201,9 @@ function addBenchmarkToDataJson(
   return prevBench;
 }
 
-if (Deno.args.length != 5) {
+if (Deno.args.length != 7) {
   abort(
-    "Usage: script <name> <schema> <group-by> <metadata.json> <baseline-data.json> <new-benchdata.json>",
+    "Usage: script <name> <schema> <group-by> <bigger-is-better> <metadata.json> <baseline-data.json> <new-benchdata.json>",
   );
 }
 
@@ -196,16 +211,38 @@ const [
   name,
   schema_raw,
   groupBy_raw,
+  bigger_is_better_raw,
   metadata_path,
   baseline_path,
   benchdata_path,
 ] = Deno.args;
 
+let bigger_is_better = true;
+if (bigger_is_better_raw == "true") {
+  bigger_is_better = true;
+} else if (bigger_is_better_raw == "false") {
+  bigger_is_better = false;
+} else {
+  abort('argument `bigger-is-better` must be "true" or "false".');
+}
+
 const schema = parseSchema(schema_raw);
 const groupBy = parseSchema(groupBy_raw);
-const bench = await loadBenchmarkResult(benchdata_path, schema);
-const data: DataJson = await parseJsonFile(baseline_path);
 const metadata: Metadata = await parseJsonFile(metadata_path);
+const commit: Commit = {
+  author: metadata.committer,
+  committer: { name: metadata.committer },
+  id: metadata.commitHash,
+  message: metadata.commitMessage,
+  url: metadata.commitUrl,
+};
+const bench = await loadBenchmarkResult(
+  commit,
+  bigger_is_better,
+  benchdata_path,
+  schema,
+);
+const data: DataJson = await parseJsonFile(baseline_path);
 
 addBenchmarkToDataJson(metadata, groupBy, schema, name, bench, data, null);
 
