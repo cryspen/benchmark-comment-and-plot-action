@@ -1,0 +1,14 @@
+{
+  "committer": "testuser",
+  "timestamp": "just now",
+  "repo": "testuser/foo",
+  "repo_owner": "testuser",
+  "prNumber": 123,
+  "prTitle": "Paint bikeshed yellow",
+  "commitHash": "abc123",
+  "commitHashShort": "abc",
+  "commitMessage": "fix issues after repaint\n\npaint wasn't dry before running ci",
+  "commitMessageFirst": "fix issues after repaint",
+  "commitUrl": "/commits/abc123",
+  "commitTimestamp": "2025-08-11T12:14:40+02:00"
+}

@@ -9,13 +9,11 @@ interface GitHubUser {
 }
 
 interface Commit {
-  author: string;
+  author: GitHubUser;
   committer: GitHubUser;
-  distinct?: unknown; // Unused
   id: string;
   message: string;
-  timestamp?: string;
-  tree_id?: unknown; // Unused
+  timestamp: string;
   url: string;
 }
 
@@ -40,30 +38,12 @@ interface DataJson {
   schema: { [name: string]: string[] };
 }
 
-interface Listing {
-  branches: string[];
-  prs: string[];
-}
-
 interface Benchmark {
   commit: Commit;
   date: number;
   bigger_is_better: boolean;
   benches: BenchmarkResult[];
 }
-
-const DEFAULT_DATA_JSON = {
-  lastUpdate: 0,
-  repoUrl: "",
-  entries: {},
-  groupBy: {},
-  schema: {},
-};
-
-const DEFAULT_LISTING = {
-  branches: [],
-  prs: [],
-};
 
 function abort(msg: string, code = 1) {
   console.error(msg);
@@ -86,20 +66,6 @@ function parseSchema(schema?: string): string[] {
   const keys = schema.split(",");
   if (keys.length === 1 && keys[0] === "") {
     return defaultSchema;
-  }
-
-  return keys;
-}
-
-function parseGroupBy(groupBy?: string): string[] {
-  if (groupBy === undefined) {
-    return ["os"];
-  }
-
-  const keys = groupBy.split(",");
-
-  if (keys.length === 1 && keys[0] === "") {
-    return ["os"];
   }
 
   return keys;
@@ -152,10 +118,10 @@ interface Metadata {
   commitMessage: string;
   commitMesasgeFirst: string;
   commitUrl: string;
+  commitTimestamp: string;
 }
 
 function addBenchmarkToDataJson(
-  metadata: Metadata,
   groupBy: string[],
   schema: string[],
   benchName: string,
@@ -230,11 +196,12 @@ const schema = parseSchema(schema_raw);
 const groupBy = parseSchema(groupBy_raw);
 const metadata: Metadata = await parseJsonFile(metadata_path);
 const commit: Commit = {
-  author: metadata.committer,
-  committer: { name: metadata.committer },
+  author: { name: metadata.committer, username: metadata.committer },
+  committer: { name: metadata.committer, username: metadata.committer },
   id: metadata.commitHash,
   message: metadata.commitMessage,
   url: metadata.commitUrl,
+  timestamp: metadata.commitTimestamp,
 };
 const bench = await loadBenchmarkResult(
   commit,
@@ -244,7 +211,7 @@ const bench = await loadBenchmarkResult(
 );
 const data: DataJson = await parseJsonFile(baseline_path);
 
-addBenchmarkToDataJson(metadata, groupBy, schema, name, bench, data, null);
+addBenchmarkToDataJson(groupBy, schema, name, bench, data, null);
 
 const encoder = new TextEncoder();
 const jsonBytes = encoder.encode(JSON.stringify(data));

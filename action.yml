@@ -96,8 +96,8 @@ runs:
       run: |
         cat >metadata.json <<EOF
           {
-            "comitter": "${{ github.event.pull_request.head.user.login }}",
-            "timestamp": ${{ github.event.pull_request.head.repo.updated_at }},
+            "committer": "${{ github.event.pull_request.head.user.login }}",
+            "timestamp": "${{ github.event.pull_request.head.repo.updated_at }}",
             "repo": "${{ github.repository }}",
             "repo_owner": "${{ github.repository_owner }}",
             "prNumber": ${{ github.event.pull_request.number }},
@@ -106,7 +106,8 @@ runs:
             "commitHashShort": "$(git rev-parse --short HEAD)",
             "commitMessage": "$(git show -s --format=%B HEAD)",
             "commitMessageFirst": "$(git show -s --format=%B HEAD | head -n1)",
-            "commitUrl": "${{ github.event.pull_request.html_url }}"
+            "commitUrl": "${{ github.event.pull_request.html_url }}",
+            "commitTimestamp": "$(git show -s --format="%aI" HEAD)"
           }
         EOF
     - name: Fetch Benchmark Benchmark Data
