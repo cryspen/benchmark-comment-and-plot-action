@@ -107,12 +107,12 @@ runs:
             "repo_owner": "${{ github.repository_owner }}",
             "prNumber": ${{ github.event.pull_request.number }},
             "prTitle": "${{ github.event.pull_request.title }}",
-            "commitHash": "$(git rev-parse HEAD)",
-            "commitHashShort": "$(git rev-parse --short HEAD)",
-            "commitMessage": "$(git show -s --format=%B HEAD)",
-            "commitMessageFirst": "$(git show -s --format=%B HEAD | head -n1)",
+            "commitHash": "$(git rev-parse HEAD | jq -Rs )",
+            "commitHashShort": "$(git rev-parse --short HEAD | jq -Rs )",
+            "commitMessage": "$(git show -s --format=%B HEAD | jq -Rs )",
+            "commitMessageFirst": "$(git show -s --format=%B HEAD | head -n1 | jq -Rs )",
             "commitUrl": "${{ github.event.pull_request.html_url }}",
-            "commitTimestamp": "$(git show -s --format="%aI" HEAD)"
+            "commitTimestamp": "$(git show -s --format="%aI" HEAD | jq -Rs )"
           }
         EOF
     - name: Fetch Benchmark Benchmark Data
