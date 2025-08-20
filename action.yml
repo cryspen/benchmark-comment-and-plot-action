@@ -124,8 +124,8 @@ runs:
         echo fetching baseline data from "$url"
         wget -O baseline.json "$url"
 
-    # TODO: Only run this if fetching the data was successful, i.e. if there exists data for main.
-    #       Otherwise just post the comment without diff and visualization.
+    # We need to branch here. If we were able to fetch the data, continue here. Otherwise, look further below. 
+
     - name: Create Benchmark HTML and Data Files
       if: ${{ steps.load-baseline.outcome == 'success' }}
       shell: bash
@@ -155,24 +155,8 @@ runs:
     - name: Prepare visualization link
       if: ${{ steps.load-baseline.outcome == 'success' }}
       shell: bash
-      run: echo 'CRYSPEN_BENCHVIZ_LINK="[Visualized Results](${{ steps.upload.outputs.artifact-url }})"' >> $GITHUB_ENV
+      run: echo "[Visualized Results](${{ steps.upload.outputs.artifact-url }})" >benchviz-link.commentpart.md
 
-    - name: Note no visualization is available
-      if: ${{ steps.load-baseline.outcome == 'failure' }}
-      shell: bash
-      run: echo CRYSPEN_BENCHVIZ_LINK="Couldn't find historical data, not showing diffs." >> $GITHUB_ENV
-
-    - name: Prepare comment header
-      shell: bash
-      run: |
-        cat >comment.md <<EOF
-        *beep boop, I am the benchmark bot*
-
-        $CRYSPEN_BENCHVIZ_LINK
-
-        EOF
-
-    # Depending on whether there was baseline data, generate the comment with out without comparison an viz
     - name: Build Comment with Diff
       if: ${{ steps.load-baseline.outcome == 'success' }}
       shell: bash
@@ -181,7 +165,25 @@ runs:
           --name "${{ inputs.name }}" \
           --schema "${{ inputs.schema }}" \
           --groupBy "${{ inputs.group-by }}" \
-          <data.json >>comment.md
+          <data.json >table.commentpart.md
+
+    # If we were **not** able to fetch the data, that means that we can't diff or produce a graph.
+    # In that case, leave a note and print the table without the diff
+
+    - name: Note no visualization is available
+      if: ${{ steps.load-baseline.outcome == 'failure' }}
+      shell: bash
+      run: echo "Couldn't find historical data, not showing diffs." >benchviz-link.commentpart.md
+
+    - name: Prepare comment header
+      shell: bash
+      run: |
+        cat >comment.md <<EOF
+        *beep boop, I am the benchmark bot*
+
+        <(benchviz-link.commentpart.md)
+
+        EOF
     - name: Build Comment without Diff
       if: ${{ steps.load-baseline.outcome == 'failure' }}
       shell: bash
@@ -189,7 +191,21 @@ runs:
         deno $GITHUB_ACTION_PATH/src/report_gen_nodiff.ts \
           "${{ inputs.schema }}" \
           "${{ inputs.group-by }}" \
-          <"${{ inputs.input-data-path }}" >>comment.md
+          <"${{ inputs.input-data-path }}" table.commentpart.md
+
+
+    # We are merging the branches here, the stuff below is executed by both!
+
+    - name: Prepare comment header
+      shell: bash
+      run: |
+        cat >comment.md <<EOF
+        *beep boop, I am the benchmark bot*
+
+        <(benchviz-link.commentpart.md)
+
+        <(table.commentpart.md)
+        EOF
 
     - name: Post Comment
       uses: mshick/add-pr-comment@v2
