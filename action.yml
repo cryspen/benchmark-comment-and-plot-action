@@ -169,6 +169,6 @@ runs:
 
     - name: Post Comment
       uses: mshick/add-pr-comment@v2
-        with:
-          message-path: comment.md
+      with:
+        message-path: comment.md
 
