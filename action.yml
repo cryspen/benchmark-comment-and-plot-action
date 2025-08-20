@@ -138,7 +138,7 @@ runs:
           "${{ inputs.group-by }}" \
           "${{ inputs.bigger-is-better }}" \
           metadata.json \
-          main.json \
+          baseline.json \
           "${{ inputs.input-data-path }}"
     - name: Upload Artifacts
       id: upload
