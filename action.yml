@@ -132,7 +132,7 @@ runs:
       run: |
         cp $GITHUB_ACTION_PATH/src/default_index.html index.html
 
-        deno ./src/updateBenchmarkData.ts ${{ inputs.name }} ${{ inputs.schema }} ${{ inputs.group-by }} ${{ inputs.bigger-is-better }} metadata.js main.json ${{ inputs.input-data-path }}
+        deno $GITHUB_ACTION_PATH/src/updateBenchmarkData.ts ${{ inputs.name }} ${{ inputs.schema }} ${{ inputs.group-by }} ${{ inputs.bigger-is-better }} metadata.js main.json ${{ inputs.input-data-path }}
     - name: Upload Artifacts
       id: upload
       if: ${{ steps.load-baseline.outcome == 'success' }}
@@ -154,7 +154,7 @@ runs:
         [Visualized Results](${{ steps.upload.outputs.artifact-url }})
 
         EOF
-        deno ./src/report_gen_diff.ts ${{ inputs.name }} ${{ inputs.schema }} ${{ inputs.group-by }} <data.json >>comment.md
+        deno $GITHUB_ACTION_PATH/src/report_gen_diff.ts ${{ inputs.name }} ${{ inputs.schema }} ${{ inputs.group-by }} <data.json >>comment.md
     - name: Build Comment without Diff
       if: ${{ steps.load-baseline.outcome == 'failure' }}
       shell: bash
@@ -165,7 +165,7 @@ runs:
         Couldn't find historical data, not showing diffs.
 
         EOF
-        deno ./src/report_gen_nodiff.ts ${{ inputs.schema }} ${{ inputs.group-by }} <${{ inputs.input-data-path }} >>comment.md
+        deno $GITHUB_ACTION_PATH/src/report_gen_nodiff.ts ${{ inputs.schema }} ${{ inputs.group-by }} <${{ inputs.input-data-path }} >>comment.md
 
     - name: Post Comment
       uses: mshick/add-pr-comment@v2
