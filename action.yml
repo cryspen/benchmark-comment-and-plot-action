@@ -117,17 +117,17 @@ runs:
         EOF
     - name: Fetch Benchmark Benchmark Data
       id: load-baseline
+      continue-on-error: true
       shell: bash
       run: |
         url="https://github.com/${{ inputs.gh-repository }}/raw/${{ inputs.gh-pages-branch }}/${{ inputs.base-path }}/refs/heads/main.json"
         echo fetching baseline data from "$url"
-        echo success >$GITHUB_OUTPUT
-        wget -O baseline.json "$url" || echo failure >$GITHUB_OUTPUT
+        wget -O baseline.json "$url"
 
     # TODO: Only run this if fetching the data was successful, i.e. if there exists data for main.
     #       Otherwise just post the comment without diff and visualization.
     - name: Create Benchmark HTML and Data Files
-      if: ${{ steps.load-baseline == 'success' }}
+      if: ${{ steps.load-baseline.outcome == 'success' }}
       shell: bash
       run: |
         cp $GITHUB_ACTION_PATH/src/default_index.html index.html
@@ -135,7 +135,7 @@ runs:
         deno ./src/updateBenchmarkData.ts ${{ inputs.name }} ${{ inputs.schema }} ${{ inputs.group-by }} ${{ inputs.bigger-is-better }} metadata.js main.json ${{ inputs.input-data-path }}
     - name: Upload Artifacts
       id: upload
-      if: ${{ steps.load-baseline == 'success' }}
+      if: ${{ steps.load-baseline.outcome == 'success' }}
       uses: actions/upload-artifact@v4
       with:
         path: |
@@ -145,7 +145,7 @@ runs:
 
     # Depending on whether there was baseline data, generate the comment with out without comparison an viz
     - name: Build Comment with Diff
-      if: ${{ steps.load-baseline == 'success' }}
+      if: ${{ steps.load-baseline.outcome == 'success' }}
       shell: bash
       run: |
         cat >comment.md <<EOF
@@ -156,7 +156,7 @@ runs:
         EOF
         deno ./src/report_gen_diff.ts ${{ inputs.name }} ${{ inputs.schema }} ${{ inputs.group-by }} <data.json >>comment.md
     - name: Build Comment without Diff
-      if: ${{ steps.load-baseline == 'failure' }}
+      if: ${{ steps.load-baseline.outcome == 'failure' }}
       shell: bash
       run: |
         cat >comment.md <<EOF
