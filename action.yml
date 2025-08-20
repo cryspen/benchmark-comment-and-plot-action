@@ -144,11 +144,23 @@ runs:
     - name: Build Comment with Diff
       if: ${{ steps.load-baseline == 'success' }}
       run: |
-        echo TODO: run a different script that uses ${{ steps.upload.outputs.artifact-url }} >comment.md
+        cat >comment.md <<EOF
+        *beep boop, I am the benchmark bot*
+
+        [Visualized Results](${{ steps.upload.outputs.artifact-url }})
+
+        EOF
+        deno ./src/report_gen_diff.ts ${{ name }} ${{ schema }} ${{ group-by }} <data.json >>comment.md
     - name: Build Comment without Diff
       if: ${{ steps.load-baseline == 'failure' }}
       run: |
-        deno ./src/report_gen_nodiff.ts ${{ schema }} ${{ group-by }} <${{ steps.upload.outputs.artifact-url }} >comment.md
+        cat >comment.md <<EOF
+        *beep boop, I am the benchmark bot*
+
+        Couldn't find historical data, not showing diffs.
+
+        EOF
+        deno ./src/report_gen_nodiff.ts ${{ schema }} ${{ group-by }} <${{ input-data-path }} >>comment.md
 
     - name: Post Comment
       uses: mshick/add-pr-comment@v2
