@@ -96,6 +96,7 @@ runs:
       with:
         deno-version: v2.x
     - name: Prepare PR Metadata
+      shell: bash
       run: | 
         # TODO: gracefully handle missing data
         cat >metadata.json <<EOF
@@ -116,6 +117,7 @@ runs:
         EOF
     - name: Fetch Benchmark Benchmark Data
       id: load-baseline
+      shell: bash
       run: |
         url="https://github.com/${{ gh-repository }}/raw/${{ gh-pages-branch }}/${{ base-path }}/refs/heads/main.json"
         echo fetching baseline data from "$url"
@@ -126,6 +128,7 @@ runs:
     #       Otherwise just post the comment without diff and visualization.
     - name: Create Benchmark HTML and Data Files
       if: ${{ steps.load-baseline == 'success' }}
+      shell: bash
       run: |
         cp $GITHUB_ACTION_PATH/src/default_index.html index.html
 
@@ -143,6 +146,7 @@ runs:
     # Depending on whether there was baseline data, generate the comment with out without comparison an viz
     - name: Build Comment with Diff
       if: ${{ steps.load-baseline == 'success' }}
+      shell: bash
       run: |
         cat >comment.md <<EOF
         *beep boop, I am the benchmark bot*
@@ -153,6 +157,7 @@ runs:
         deno ./src/report_gen_diff.ts ${{ name }} ${{ schema }} ${{ group-by }} <data.json >>comment.md
     - name: Build Comment without Diff
       if: ${{ steps.load-baseline == 'failure' }}
+      shell: bash
       run: |
         cat >comment.md <<EOF
         *beep boop, I am the benchmark bot*
