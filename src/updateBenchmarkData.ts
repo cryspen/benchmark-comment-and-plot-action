@@ -157,7 +157,7 @@ function addBenchmarkToDataJson(
   // Add benchmark result
   if (data.entries[benchName] === undefined) {
     data.entries[benchName] = [bench];
-    console.debug(
+    console.warn(
       `No suite was found for benchmark '${benchName}' in existing data. Created`,
     );
   } else {
@@ -172,7 +172,7 @@ function addBenchmarkToDataJson(
 
     if (maxItems !== null && suites.length > maxItems) {
       suites.splice(0, suites.length - maxItems);
-      console.debug(
+      console.warn(
         `Number of data items for '${benchName}' was truncated to ${maxItems} due to max-items-in-charts`,
       );
     }

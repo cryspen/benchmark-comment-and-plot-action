@@ -139,7 +139,9 @@ runs:
           "${{ inputs.bigger-is-better }}" \
           metadata.json \
           baseline.json \
-          "${{ inputs.input-data-path }}"
+          "${{ inputs.input-data-path }}" \
+          >data.json
+
     - name: Upload Artifacts
       id: upload
       if: ${{ steps.load-baseline.outcome == 'success' }}
