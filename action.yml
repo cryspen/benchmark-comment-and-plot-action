@@ -119,7 +119,7 @@ runs:
       id: load-baseline
       shell: bash
       run: |
-        url="https://github.com/${{ gh-repository }}/raw/${{ gh-pages-branch }}/${{ base-path }}/refs/heads/main.json"
+        url="https://github.com/${{ inputs.gh-repository }}/raw/${{ inputs.gh-pages-branch }}/${{ inputs.base-path }}/refs/heads/main.json"
         echo fetching baseline data from "$url"
         echo success >$GITHUB_OUTPUT
         wget -O baseline.json "$url" || echo failure >$GITHUB_OUTPUT
@@ -132,7 +132,7 @@ runs:
       run: |
         cp $GITHUB_ACTION_PATH/src/default_index.html index.html
 
-        deno ./src/updateBenchmarkData.ts ${{ name }} ${{ schema }} ${{ group-by }} ${{ bigger-is-better }} metadata.js main.json ${{ input-data-path }}
+        deno ./src/updateBenchmarkData.ts ${{ inputs.name }} ${{ inputs.schema }} ${{ inputs.group-by }} ${{ inputs.bigger-is-better }} metadata.js main.json ${{ inputs.input-data-path }}
     - name: Upload Artifacts
       id: upload
       if: ${{ steps.load-baseline == 'success' }}
@@ -154,7 +154,7 @@ runs:
         [Visualized Results](${{ steps.upload.outputs.artifact-url }})
 
         EOF
-        deno ./src/report_gen_diff.ts ${{ name }} ${{ schema }} ${{ group-by }} <data.json >>comment.md
+        deno ./src/report_gen_diff.ts ${{ inputs.name }} ${{ inputs.schema }} ${{ inputs.group-by }} <data.json >>comment.md
     - name: Build Comment without Diff
       if: ${{ steps.load-baseline == 'failure' }}
       shell: bash
@@ -165,7 +165,7 @@ runs:
         Couldn't find historical data, not showing diffs.
 
         EOF
-        deno ./src/report_gen_nodiff.ts ${{ schema }} ${{ group-by }} <${{ input-data-path }} >>comment.md
+        deno ./src/report_gen_nodiff.ts ${{ inputs.schema }} ${{ inputs.group-by }} <${{ inputs.input-data-path }} >>comment.md
 
     - name: Post Comment
       uses: mshick/add-pr-comment@v2
