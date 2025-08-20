@@ -83,13 +83,56 @@ async function main() {
     );
     Deno.exit(0);
   }
-  const baselineEntry = history[history.length - 2];
-  const currentEntry = history[history.length - 1];
+
+  // 3. Find and aggregate data for the last two unique commits.
+  let currentCommitId: string | null = null;
+  let baselineCommitId: string | null = null;
+
+  // Find the two most recent unique commit hashes by iterating backwards.
+  for (let i = history.length - 1; i >= 0; i--) {
+    const commitId = history[i].commit.id;
+    if (!currentCommitId) {
+      currentCommitId = commitId;
+      continue;
+    }
+    if (commitId !== currentCommitId) {
+      baselineCommitId = commitId;
+      break; // Found both commits, we can stop.
+    }
+  }
+
+  if (!baselineCommitId) {
+    console.log(
+      `## ⚠️ No Comparison Available for ${args.name}\n\nNot enough data to compare. At least two different commits with benchmark data are required.`,
+    );
+    Deno.exit(0);
+  }
+
+  // Create aggregated entries for the baseline and current commits.
+  const findFirstEntryForCommit = (commitId: string) =>
+    history.find((e) => e.commit.id === commitId)!;
+
+  const aggregatedCurrentEntry: HistoryEntry = {
+    ...findFirstEntryForCommit(currentCommitId!),
+    benches: [], // We will fill this by aggregating
+  };
+  const aggregatedBaselineEntry: HistoryEntry = {
+    ...findFirstEntryForCommit(baselineCommitId),
+    benches: [], // We will fill this by aggregating
+  };
+
+  for (const entry of history) {
+    if (entry.commit.id === currentCommitId) {
+      aggregatedCurrentEntry.benches.push(...entry.benches);
+    } else if (entry.commit.id === baselineCommitId) {
+      aggregatedBaselineEntry.benches.push(...entry.benches);
+    }
+  }
 
   // 3. Process and Compare Benchmarks
   const combinedResults = compareBenches(
-    baselineEntry,
-    currentEntry,
+    aggregatedBaselineEntry,
+    aggregatedCurrentEntry,
     schemaKeys,
   );
 
@@ -99,8 +142,8 @@ async function main() {
   // 5. Generate and Print Markdown Report
   const markdownReport = generateMarkdown(
     args.name,
-    baselineEntry,
-    currentEntry,
+    aggregatedBaselineEntry,
+    aggregatedCurrentEntry,
     groupedResults,
     schemaKeys,
     groupByKeys,

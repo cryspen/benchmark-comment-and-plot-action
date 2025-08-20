@@ -591,18 +591,6 @@
                         .then((response) => response.json());
                 }
 
-                async function loadDataFromBranch(branch) {
-                    const dataUrl = `branch/${branch}.json`;
-                    window.BENCHMARK_DATA = await loadDataFromUrl(dataUrl);
-                    return window.BENCHMARK_DATA;
-                }
-
-                async function loadDataFromPr(pr) {
-                    const dataUrl = `pr/${pr}.json`;
-                    window.BENCHMARK_DATA = await loadDataFromUrl(dataUrl);
-                    return window.BENCHMARK_DATA;
-                }
-
                 function rerenderAll() {
                     // retrieve the data for the benchmark set with the first name
                     const benchSets = window.BENCHMARK_DATA.entries;
@@ -613,35 +601,10 @@
                     renderAllCharts(benchSet);
                 }
 
-                async function loadFirstDataset(listing) {
-                    if (listing.branches) {
-                        for (const branch of listing.branches) {
-                            try {
-                                return await loadDataFromBranch(branch);
-                            } catch (e) {
-                                console.error(e);
-                                continue;
-                            }
-                        }
-                    }
-
-                    if (listing.prs) {
-                        for (const pr of listing.prs) {
-                            try {
-                                return await loadDataFromPr(pr);
-                            } catch (e) {
-                                console.error(e);
-                                continue;
-                            }
-                        }
-                    }
-                    throw new Error('listing contains no valid datasets');
-                }
-
                 async function init() {
                     // Load the benchmark data
-                    const listing = await loadDataFromUrl('listing.json');
-                    const data    = await loadFirstDataset(listing);
+                    window.BENCHMARK_DATA = await loadDataFromUrl('data.json');
+                    const data    = window.BENCHMARK_DATA;
 
                     // Load the PR/commit metadata
                     const metadata = await loadDataFromUrl('metadata.json');
