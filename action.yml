@@ -151,6 +151,7 @@ runs:
           metadata.json
           index.html
           data.json
+          benchdata/
 
     - name: Prepare visualization link
       if: ${{ steps.load-baseline.outcome == 'success' }}
@@ -174,6 +175,7 @@ runs:
       if: ${{ steps.load-baseline.outcome == 'failure' }}
       shell: bash
       run: echo "Couldn't find historical data, not showing diffs." >benchviz-link.commentpart.md
+
     - name: Build Comment without Diff
       if: ${{ steps.load-baseline.outcome == 'failure' }}
       shell: bash
@@ -181,8 +183,7 @@ runs:
         deno $GITHUB_ACTION_PATH/src/report_gen_nodiff.ts \
           "${{ inputs.schema }}" \
           "${{ inputs.group-by }}" \
-          <"${{ inputs.input-data-path }}" table.commentpart.md
-
+          <"${{ inputs.input-data-path }}" >table.commentpart.md
 
     # We are merging the branches here, the stuff below is executed by both!
 
