@@ -178,9 +178,9 @@ runs:
       shell: bash
       run: |
         deno $GITHUB_ACTION_PATH/src/report_gen_diff.ts \
-          "${{ inputs.name }}" \
-          "${{ inputs.schema }}" \
-          "${{ inputs.group-by }}" \
+          --name "${{ inputs.name }}" \
+          --schema "${{ inputs.schema }}" \
+          --groupBy "${{ inputs.group-by }}" \
           <data.json >>comment.md
     - name: Build Comment without Diff
       if: ${{ steps.load-baseline.outcome == 'failure' }}
