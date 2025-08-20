@@ -132,7 +132,7 @@ runs:
       run: |
         cp $GITHUB_ACTION_PATH/src/default_index.html index.html
 
-        deno $GITHUB_ACTION_PATH/src/updateBenchmarkData.ts \
+        deno --allow-read $GITHUB_ACTION_PATH/src/updateBenchmarkData.ts \
           "${{ inputs.name }}" \
           "${{ inputs.schema }}" \
           "${{ inputs.group-by }}" \
