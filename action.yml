@@ -130,8 +130,6 @@ runs:
       if: ${{ steps.load-baseline.outcome == 'success' }}
       shell: bash
       run: |
-        cp $GITHUB_ACTION_PATH/src/default_index.html index.html
-
         deno --allow-read $GITHUB_ACTION_PATH/src/updateBenchmarkData.ts \
           "${{ inputs.name }}" \
           "${{ inputs.schema }}" \
@@ -141,6 +139,8 @@ runs:
           baseline.json \
           "${{ inputs.input-data-path }}" \
           >data.json
+
+        $GITHUB_ACTION_PATH/src/html_tpl/build.sh metadata.json data.json >index.html
 
     - name: Upload Artifacts
       id: upload
