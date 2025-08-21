@@ -63,9 +63,13 @@
 
   function buildKey(benchItem, schema) {
     // build the key from the values in the schema
-    let key = {};
+    const key = {};
     for (const s of schema) {
-      key[s] = benchItem[s];
+      if (benchItem.hasOwnProperty(s)) {
+        key[s] = benchItem[s].toString();
+      } else {
+        key[s] = "-";
+      }
     }
 
     return JSON.stringify(key);
@@ -76,7 +80,7 @@
     for (const s of schema) {
       if (!key.hasOwnProperty(s)) {
         // explicitly set to `undefined`
-        key[s] = undefined;
+        key[s] = "-";
       }
     }
     return key;
