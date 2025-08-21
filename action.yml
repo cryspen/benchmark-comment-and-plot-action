@@ -6,6 +6,9 @@ branding:
   color: 'blue'
 
 inputs:
+  id:
+    description: 'Used to disambiguate filenames, artifact names and the like.'
+    required: true
   output-md:
     description: 'The path that the markdown report is written to'
     required: true
@@ -101,9 +104,9 @@ runs:
         deno-version: v2.x
     - name: Prepare PR Metadata
       shell: bash
-      run: | 
+      run: |
         # TODO: gracefully handle missing data
-        cat >metadata.json <<EOF
+        cat >metadata-${{ inputs.id }}.json <<EOF
           {
             "committer": "${{ github.event.pull_request.head.user.login }}",
             "timestamp": "${{ github.event.pull_request.head.repo.updated_at }}",
@@ -126,9 +129,9 @@ runs:
       run: |
         url="https://github.com/${{ inputs.gh-repository }}/raw/${{ inputs.gh-pages-branch }}/${{ inputs.base-path }}/refs/heads/main.json"
         echo fetching baseline data from "$url"
-        wget -O baseline.json "$url"
+        wget -O baseline-${{ inputs.id }}.json "$url"
 
-    # We need to branch here. If we were able to fetch the data, continue here. Otherwise, look further below. 
+    # We need to branch here. If we were able to fetch the data, continue here. Otherwise, look further below.
 
     - name: Create Benchmark HTML and Data Files
       if: ${{ steps.load-baseline.outcome == 'success' }}
@@ -139,28 +142,28 @@ runs:
           "${{ inputs.schema }}" \
           "${{ inputs.group-by }}" \
           "${{ inputs.bigger-is-better }}" \
-          metadata.json \
-          baseline.json \
+          metadata-${{ inputs.id }}.json \
+          baseline-${{ inputs.id }}.json \
           "${{ inputs.input-data-path }}" \
-          >data.json
+          >data-${{ inputs.id }}.json
 
-        $GITHUB_ACTION_PATH/src/html_tpl/build.sh metadata.json data.json >index.html
+        $GITHUB_ACTION_PATH/src/html_tpl/build.sh metadata-${{ inputs.id }}.json data-${{ inputs.id }}.json >index-${{ inputs.id }}.html
 
     - name: Upload Artifacts
       id: upload
       if: ${{ steps.load-baseline.outcome == 'success' }}
       uses: actions/upload-artifact@v4
       with:
+        name: visualization-and-data-${{ inputs.id }}
         path: |
-          metadata.json
-          index.html
-          data.json
-          benchdata/
+          metadata-${{ inputs.id }}.json
+          index-${{ inputs.id }}.html
+          data-${{ inputs.id }}.json
 
     - name: Prepare visualization link
       if: ${{ steps.load-baseline.outcome == 'success' }}
       shell: bash
-      run: echo "[Visualized Results](${{ steps.upload.outputs.artifact-url }})" >benchviz-link.commentpart.md
+      run: echo "[Visualized Results](${{ steps.upload.outputs.artifact-url }})" >benchviz-link.commentpart-${{ inputs.id }}.md
 
     - name: Build Comment with Diff
       if: ${{ steps.load-baseline.outcome == 'success' }}
@@ -170,7 +173,8 @@ runs:
           --name "${{ inputs.name }}" \
           --schema "${{ inputs.schema }}" \
           --groupBy "${{ inputs.group-by }}" \
-          <data.json >table.commentpart.md
+          <data-${{ inputs.id }}.json \
+          >table.commentpart-${{ inputs.id }}.md
 
     # If we were **not** able to fetch the data, that means that we can't diff or produce a graph.
     # In that case, leave a note and print the table without the diff
@@ -178,7 +182,7 @@ runs:
     - name: Note no visualization is available
       if: ${{ steps.load-baseline.outcome == 'failure' }}
       shell: bash
-      run: echo "Couldn't find historical data, not showing diffs." >benchviz-link.commentpart.md
+      run: echo "Couldn't find historical data, not showing diffs." >benchviz-link.commentpart-${{ inputs.id }}.md
 
     - name: Build Comment without Diff
       if: ${{ steps.load-baseline.outcome == 'failure' }}
@@ -187,7 +191,8 @@ runs:
         deno $GITHUB_ACTION_PATH/src/report_gen_nodiff.ts \
           "${{ inputs.schema }}" \
           "${{ inputs.group-by }}" \
-          <"${{ inputs.input-data-path }}" >table.commentpart.md
+          <"${{ inputs.input-data-path }}" \
+          >table.commentpart-${{ inputs.id }}.md
 
     # We are merging the branches here, the stuff below is executed by both!
 
@@ -195,10 +200,8 @@ runs:
       shell: bash
       run: |
         cat >${{ inputs.output-md }} <<EOF
-        *beep boop, I am the benchmark bot*
+        $(cat benchviz-link.commentpart-${{ inputs.id }}.md)
 
-        $(cat benchviz-link.commentpart.md)
-
-        $(cat table.commentpart.md)
+        $(cat table.commentpart-${{ inputs.id }}.md)
         EOF
 
