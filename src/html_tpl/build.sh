@@ -5,8 +5,8 @@ if [ ! "$#" = "2" ]; then
   exit 1
 fi
 
-$metadata_path="$1"
-$benchdata_path="$2"
+metadata_path="$1"
+benchdata_path="$2"
 
 if [ ! -f "$metadata_path" ]; then
   echo "metadata file does not exist"
