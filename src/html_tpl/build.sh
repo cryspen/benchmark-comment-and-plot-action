@@ -1,6 +1,6 @@
 #!/usr/bin/bash
 
-if [ ! "$#" = "3" ]; then
+if [ ! "$#" = "2" ]; then
   echo "usage: $0 metadata.json benchdata.json"
   exit 1
 fi
