@@ -200,6 +200,8 @@ runs:
       shell: bash
       run: |
         cat >${{ inputs.output-md }} <<EOF
+        ## Performance Report: ${{inputs.benchmarkName}}
+
         $(cat benchviz-link.commentpart-${{ inputs.id }}.md)
 
         $(cat table.commentpart-${{ inputs.id }}.md)

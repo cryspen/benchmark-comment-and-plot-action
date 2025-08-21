@@ -233,13 +233,7 @@ function generateMarkdown(
   schemaKeys: string[],
   groupByKeys: string[],
 ): string {
-  let md = `## Performance Report: ${benchmarkName}\n\n`;
-  md += `Comparing PR commit [${
-    currentEntry.commit.id.slice(0, 7)
-  }](${currentEntry.commit.url}) against baseline [${
-    baselineEntry.commit.id.slice(0, 7)
-  }](${baselineEntry.commit.url}).\n\n`;
-
+  let md = "";
   // Ensure 'name' is the first column if it's in the schema
   const tableColumns = [...schemaKeys];
   const nameIndex = tableColumns.indexOf("name");
