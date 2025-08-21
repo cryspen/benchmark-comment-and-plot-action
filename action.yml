@@ -6,6 +6,10 @@ branding:
   color: 'blue'
 
 inputs:
+  output-md:
+    description: 'The path that the markdown report is written to'
+    required: true
+    default: 'report.md'
   bigger-is-better:
     description: 'Whether a larger value is better for comparison purposes'
     required: true
@@ -190,16 +194,11 @@ runs:
     - name: Prepare comment header
       shell: bash
       run: |
-        cat >comment.md <<EOF
+        cat >${{ inputs.output-md }} <<EOF
         *beep boop, I am the benchmark bot*
 
         $(cat benchviz-link.commentpart.md)
 
         $(cat table.commentpart.md)
         EOF
-
-    - name: Post Comment
-      uses: mshick/add-pr-comment@v2
-      with:
-        message-path: comment.md
 

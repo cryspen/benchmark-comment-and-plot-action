@@ -61,7 +61,7 @@ function generateMarkdownReport(
     const groupHeaderText = groupByKeys
       .map((key) => `**${key}**: \`${firstRow[key]}\``)
       .join(", ");
-    reportParts.push(`## ${groupHeaderText}`);
+    reportParts.push(`### ${groupHeaderText}`);
 
     // Create the Markdown table header.
     const tableHeader = `| ${orderedSchema.join(" | ")} |`;
